@@ -1,0 +1,92 @@
+﻿@page "/Haves/edit/{HaveId:int}"
+@inject NavigationManager navigationManager
+@inject IRepository repository
+@inject SweetAlertService sweetAlertService
+
+
+<PageTitle>Have Edit</PageTitle>
+
+
+<h3><i class="bi bi-pencil-square"></i> Edit Have</h3>
+
+@if (have is null)
+{
+    <div class="spinner" />
+}
+else
+{
+    <HaveForm Have="have" OnValidSubmit="Edit" ReturnAction="Return" />
+    
+}
+
+@code {
+    [Parameter] 
+    public int HaveId { get; set; }
+    private Have have = new();
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        var responseHTTP = await repository.GetAsync<Have>($"api/Haves/{HaveId}");
+
+        if (responseHTTP.Error)
+        {
+            if (responseHTTP.HttpResponseMessage.StatusCode == HttpStatusCode.NotFound)
+            {
+
+                navigationManager.NavigateTo("Haves");
+                return;
+            }
+            else
+            {  
+                var mensajeError = await responseHTTP.GetErrorMessageAsync();
+                await sweetAlertService.FireAsync("Error", mensajeError, SweetAlertIcon.Error);
+                return;
+            }
+        }
+        else
+        {
+        
+            have = responseHTTP.Response;
+        }
+    }
+
+    [CascadingParameter]
+    BlazoredModalInstance BlazoredModal { get; set; } = default!;
+    private async Task Edit()
+    {
+
+        var responseHTTP = await repository.PutAsync("api/Haves", have);
+
+        if (responseHTTP.Error)
+        {
+          
+            var mensajeError = await responseHTTP.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", mensajeError, SweetAlertIcon.Error);
+        }
+        else
+        {
+            await BlazoredModal.CloseAsync(ModalResult.Ok());
+            Return();
+
+        
+            var Toast = sweetAlertService.Mixin(new SweetAlertOptions
+                {
+                    Toast = true,
+                    Position = SweetAlertPosition.BottomEnd,
+                    ShowConfirmButton = true,
+                    Timer = 3000
+                });
+
+            await Toast.FireAsync(icon: SweetAlertIcon.Success, message: "Have modified successfully");
+
+        }
+    }
+       
+    
+    private void Return()
+    {
+        navigationManager.NavigateTo("Haves");
+    }
+}

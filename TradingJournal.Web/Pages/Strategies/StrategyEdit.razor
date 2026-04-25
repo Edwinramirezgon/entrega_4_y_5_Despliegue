@@ -1,0 +1,93 @@
+﻿@page "/Strategies/edit/{StrategyCode:int}"
+@inject NavigationManager navigationManager
+@inject IRepository repository
+@inject SweetAlertService sweetAlertService
+@attribute [Authorize(Roles = "Admin")]
+
+<PageTitle>Strategy Edit</PageTitle>
+
+
+<h3><i class="bi bi-pencil-square"></i> Edit Strategy</h3>
+
+@if (strategy is null)
+{
+    <div class="spinner" />
+}
+else
+{
+    <StrategyForm Strategy="strategy" OnValidSubmit="Edit" ReturnAction="Return" />
+    
+}
+
+@code {
+    [Parameter] 
+    public int StrategyCode { get; set; }
+    private Strategy strategy = new();
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        var responseHTTP = await repository.GetAsync<Strategy>($"api/Strategies/{StrategyCode}");
+
+        if (responseHTTP.Error)
+        {
+            if (responseHTTP.HttpResponseMessage.StatusCode == HttpStatusCode.NotFound)
+            {
+
+                navigationManager.NavigateTo("Strategies");
+                return;
+            }
+            else
+            {  
+                var mensajeError = await responseHTTP.GetErrorMessageAsync();
+                await sweetAlertService.FireAsync("Error", mensajeError, SweetAlertIcon.Error);
+                return;
+            }
+        }
+        else
+        {
+        
+            strategy = responseHTTP.Response;
+        }
+    }
+
+
+    [CascadingParameter]
+    BlazoredModalInstance BlazoredModal { get; set; } = default!;
+    private async Task Edit()
+    {
+
+        var responseHTTP = await repository.PutAsync("api/Strategies", strategy);
+
+        if (responseHTTP.Error)
+        {
+          
+            var mensajeError = await responseHTTP.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", mensajeError, SweetAlertIcon.Error);
+        }
+        else
+        {
+            await BlazoredModal.CloseAsync(ModalResult.Ok());
+            Return();
+
+        
+            var Toast = sweetAlertService.Mixin(new SweetAlertOptions
+                {
+                    Toast = true,
+                    Position = SweetAlertPosition.BottomEnd,
+                    ShowConfirmButton = true,
+                    Timer = 3000
+                });
+
+            await Toast.FireAsync(icon: SweetAlertIcon.Success, message: "Strategy modified successfully");
+
+        }
+    }
+       
+    
+    private void Return()
+    {
+        navigationManager.NavigateTo("Strategies");
+    }
+}

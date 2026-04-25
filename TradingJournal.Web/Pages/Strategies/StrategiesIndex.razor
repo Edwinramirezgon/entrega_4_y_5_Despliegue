@@ -1,0 +1,270 @@
+﻿@page "/Strategies"
+@attribute [Authorize(Roles = "Admin")]
+@inject IRepository Repository
+@inject SweetAlertService sweetAlertService
+@inject NavigationManager navigationManager
+
+<PageTitle>Strategy Index</PageTitle>
+
+
+<h3><i class="bi-clipboard-data" /> Strategies</h3>
+<Pagination CurrentPage="currentPage"
+            TotalPages="totalPages"
+            SelectedPage="SelectedPage" />
+<div class="card">
+    <div class="card-header">
+        <span>
+            <a class="btn btn-dark btn-sm float-start" @onclick=@(() => ShowModal2())><i class="bi bi-plus-circle" /> New Strategy</a>
+
+        </span>
+    </div>
+
+    <div class="mx-2">
+
+        <tr>
+
+            <th><input style="width: 400px;" type="text" class="form-control" id="titulo" placeholder="Search Strategy by Name" @bind-value="Filter" /></th>
+
+            <th>    <button type="button" class="btn btn-outline-success" @onclick="ApplyFilterAsync">Filter</button></th>
+
+            <th>  <button type="button" class="btn btn-outline-warning" @onclick="CleanFilterAsync">Clean</button></th>
+        </tr>
+
+
+
+    </div>
+
+    <div class="card-body">
+
+        <GenericList MyList="Strategies">
+
+            <Body>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+
+                            <td>
+                                <b>Strategy Code</b>
+                            </td>
+                            <td>
+                                <b>Name</b>
+                            </td>
+                            <td>
+                                <b>Session</b>
+                            </td>
+                            <td>
+                                <b>Type</b>
+                            </td>
+                            <td>
+                                <b>Description</b>
+                            </td>
+                            <td>
+                                <b>Actions</b>
+                            </td>
+
+                        </tr>
+                        @foreach (var strategy in Strategies!)
+                        {
+
+                            <tr>
+                                <td>
+                                    @strategy.Code
+                                </td>
+                                <td>
+                                    @strategy.Name
+                                </td>
+                                <td>
+                                    @strategy.Session
+                                </td>
+                                <td>
+                                    @strategy.Type
+                                </td>
+                                <td>
+                                    @strategy.Description
+                                </td>
+                                <td>
+                                    <a @onclick=@(() => ShowModal(strategy.Code, true)) class="btn btn-outline-primary">Edit <i class="bi bi-pencil-square"></i></a>
+                                    <button class="btn btn-outline-danger" @onclick=@(() => Delete(strategy))>Delete <i class="bi bi-trash3"></i></button>
+                                </td>
+
+                            </tr>
+                        }
+
+
+                    </tbody>
+                </table>
+
+            </Body>
+
+        </GenericList>
+    </div>
+</div>
+
+
+
+@code {
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string Page { get; set; } = "";
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string Filter { get; set; } = "";
+
+    [CascadingParameter]
+    IModalService Modal { get; set; } = default!;
+
+    private async Task ShowModal(int id = 0, bool isEdit = false)
+
+    {
+        IModalReference modalReference;
+        modalReference = Modal.Show<StrategyEdit>("Startegy Edit", new ModalParameters().Add("StrategyCode", id));
+
+        var result = await modalReference.Result;
+        if (result.Confirmed)
+        {
+            await Charging();
+        }
+    }
+
+    private async Task ShowModal2()
+
+    {
+        IModalReference modalReference;
+
+
+        modalReference = Modal.Show<StrategyCreate>("Strategy Create");
+
+        var result = await modalReference.Result;
+        if (result.Confirmed)
+        {
+            await Charging();
+        }
+    }
+
+    public List<Strategy> Strategies { get; set; }
+
+
+    protected async override Task OnInitializedAsync()
+    {
+        await Charging();
+    }
+
+
+
+    private int currentPage = 1;
+    private int totalPages;
+
+
+
+
+    private async Task SelectedPage(int page)
+    {
+        currentPage = page;
+        await Charging(page);
+    }
+
+
+
+
+
+
+    private async Task Charging(int page = 1)
+    {
+
+        if (!string.IsNullOrWhiteSpace(Page))
+        {
+            page = Convert.ToInt32(Page);
+        }
+        string url1 = string.Empty;
+        string url2 = string.Empty;
+        if (string.IsNullOrEmpty(Filter))
+        {
+            url1 = $"api/Strategies?page={page}";
+            url2 = $"api/Strategies/totalPages";
+        }
+        else
+        {
+            url1 = $"api/Strategies?page={page}&filter={Filter}";
+            url2 = $"api/Strategies/totalPages?filter={Filter}";
+        }
+
+
+
+        var responseHppt = await Repository.GetAsync<List<Strategy>>(url1);
+        var responseHppt2 = await Repository.GetAsync<int>(url2);
+        Strategies = responseHppt.Response!;
+        totalPages = responseHppt2.Response!;
+
+
+
+
+    }
+
+    
+    private async Task CleanFilterAsync()
+    {
+        Filter = string.Empty;
+        await ApplyFilterAsync();
+    }
+    private async Task ApplyFilterAsync()
+    {
+        int page = 1;
+        await Charging(page);
+        await SelectedPage(page);
+    }
+
+
+    private async Task Delete(Strategy strategy)
+    {
+
+        var result = await sweetAlertService.FireAsync(new SweetAlertOptions
+            {
+                Title = "Confirm",
+                Text = $"You really want to delete the Strategy : {strategy.Name}?",
+                Icon = SweetAlertIcon.Question,
+                ShowCancelButton = true,
+                CancelButtonText = "No",
+                ConfirmButtonText = "yes"
+            });
+
+        var confirm = string.IsNullOrEmpty(result.Value);
+        if (confirm)
+        {
+            return;
+        }
+
+        var responseHTTP = await Repository.DeleteAsync($"/api/Strategies/{strategy.Code}");
+
+        if (responseHTTP.Error)
+        {
+            if (responseHTTP.HttpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                navigationManager.NavigateTo("/Strategies");
+            }
+            else
+            {
+                var mensajeError = await responseHTTP.GetErrorMessageAsync();
+                await sweetAlertService.FireAsync("Error", mensajeError, SweetAlertIcon.Error);
+            }
+        }
+        else
+        {
+
+            await Charging();
+
+            var toast = sweetAlertService.Mixin(new SweetAlertOptions
+                {
+                    Toast = true,
+                    ShowConfirmButton = true,
+                    Timer = 3000,
+                    Position = SweetAlertPosition.BottomEnd
+                });
+            toast.FireAsync(icon: SweetAlertIcon.Success, message: "Strategy Successfully Deleted.");
+        }
+    }
+}

@@ -1,0 +1,95 @@
+﻿@page "/tradelogs/edit/{TradeLogTradeNumber:int}"
+@inject NavigationManager navigationManager
+@inject IRepository repository
+@inject SweetAlertService sweetAlertService
+@attribute [Authorize(Roles = "Admin")]
+
+<PageTitle>Trader Log Edit</PageTitle>
+
+
+<h3><i class="bi bi-pencil-square"></i> Edit Trade Log</h3>
+
+@if (tradelog is null)
+{
+    <div class="spinner" />
+}
+else
+{
+    <TradeLogForm TradeLog="tradelog" OnValidSubmit="Editar" ReturnAction="Return" />
+    
+}
+
+@code {
+    [Parameter] 
+    public int TradeLogTradeNumber { get; set; }
+    private TradeLog tradelog = new();
+
+    
+    protected override async Task OnInitializedAsync()
+    {
+
+        var responseHTTP = await repository.GetAsync<TradeLog>($"api/tradelogs/{TradeLogTradeNumber}");
+
+        if (responseHTTP.Error)
+        {
+            if (responseHTTP.HttpResponseMessage.StatusCode == HttpStatusCode.NotFound)
+            {
+               
+                navigationManager.NavigateTo("tradelogs");
+                return;
+            }
+            else
+            {  
+                var mensajeError = await responseHTTP.GetErrorMessageAsync();
+                await sweetAlertService.FireAsync("Error", mensajeError, SweetAlertIcon.Error);
+                return;
+            }
+        }
+        else
+        {
+            
+            tradelog = responseHTTP.Response;
+        }
+    }
+
+    [CascadingParameter]
+    BlazoredModalInstance BlazoredModal { get; set; } = default!;
+    private async Task Editar()
+    {
+
+        var responseHTTP = await repository.PutAsync("api/tradelogs", tradelog);
+
+        if (responseHTTP.Error)
+        {
+            
+            var mensajeError = await responseHTTP.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", mensajeError, SweetAlertIcon.Error);
+        }
+        else
+        {
+            await BlazoredModal.CloseAsync(ModalResult.Ok());
+            Return();
+
+           
+            var Toast = sweetAlertService.Mixin(new SweetAlertOptions
+                {
+
+                    Toast = true,
+                    Position = SweetAlertPosition.BottomEnd,
+                    ShowConfirmButton = true,
+                    Timer = 3000
+
+                });
+
+            await Toast.FireAsync(icon: SweetAlertIcon.Success, message: "Trade Log modified successfully");
+
+        }
+    }
+       
+    
+    private void Return()
+    {
+        navigationManager.NavigateTo("tradelogs");
+
+    }
+}

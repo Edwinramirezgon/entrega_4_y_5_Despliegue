@@ -1,0 +1,63 @@
+﻿@page "/Haves/create"
+@inject IRepository repository
+@inject NavigationManager navigationManager
+@inject SweetAlertService sweetAlertService
+@attribute [Authorize(Roles = "Admin")]
+
+
+<PageTitle>Have Create</PageTitle>
+
+
+
+<h3><i class="bi bi-plus-circle"></i> Have Creation</h3>
+
+
+<HaveForm Have="have" OnValidSubmit="Create" ReturnAction="Return" />
+
+
+@code {
+    private Have have = new();
+
+
+    [CascadingParameter]
+    BlazoredModalInstance BlazoredModal { get; set; } = default!;
+    private async Task Create()
+    {
+        var responseHttp = await repository.PostAsync("/api/haves", have);
+
+        if (responseHttp.Error)
+        {
+            
+            var message = await responseHttp.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+        }
+        else
+        {
+            await BlazoredModal.CloseAsync(ModalResult.Ok());
+            Return();
+
+            var Toast = sweetAlertService.Mixin(new SweetAlertOptions
+                {
+
+                    Toast = true,
+                    Position = SweetAlertPosition.BottomEnd,
+                    ShowConfirmButton = true,
+                    Timer = 3000
+
+                });
+
+            await Toast.FireAsync(icon: SweetAlertIcon.Success, message: "Have successfully created");
+        }
+    }
+
+
+
+   
+    private void Return()
+    {
+        navigationManager.NavigateTo("/haves");
+
+
+    }
+
+}

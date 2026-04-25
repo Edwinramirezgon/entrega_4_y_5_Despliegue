@@ -1,0 +1,227 @@
+﻿@attribute [Authorize(Roles = "Admin")]
+@inject IRepository Repository
+@inject SweetAlertService sweetAlertService
+@inject NavigationManager navigationManager
+@inject ILoginService loginService
+@inherits LayoutComponentBase
+@inject AuthenticationStateProvider GetAuthenticationStateAsync
+@using Blazored.Modal
+@using Blazored.Modal.Services
+
+<div class="page">
+    <main>
+
+        <nav class="navbar  navbar-expand-lg" style="background-image: linear-gradient(180deg, rgb(0, 25, 51) 0%, #C0C0C0 70%)">
+            <div class="container-fluid">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                    </button>          
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <a class="navbar-brand" href="">TRADING JOURNAL</a>            
+
+                    <AuthorizeView>
+                        <NotAuthorized Context="NotAuthorizedContext">
+                            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                            </ul>
+                                <div class="d-flex justify-content-end">
+                                    <div class="px-2">
+                                        <button class="btn btn-outline-primary" @onclick=@(() => ShowModal3())><i class="bi bi-card-checklist"></i> Sign in</button>
+                                    </div>
+                                    <div class="px-4">
+                                        <button class="btn btn-outline-dark" @onclick=@(() => ShowModal2())><i class="bi bi-card-checklist"></i> Register</button>
+                                    </div>
+                                </div>                          
+                        </NotAuthorized>
+                    </AuthorizeView>
+
+
+
+
+                    <AuthorizeView Roles="Admin">
+                        <Authorized>
+                            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                                <li class="nav-item">
+                                    <a class="nav-link active" aria-current="page" href="coins"><i class="bi bi-coin"></i>&nbsp; Coins  </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link active" aria-current="page" href="Users"><i class="bi bi-person-badge"></i>&nbsp; Users  </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link active" aria-current="page" href="Account"><i class="bi bi-person-rolodex"></i>&nbsp; Accounts </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link active" aria-current="page" href="AccTypes"><i class="bi bi-bar-chart-steps"></i>&nbsp; Account Types </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link active" aria-current="page" href="Brokers"><i class="bi bi-piggy-bank-fill"></i>&nbsp; Brokers </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link active" aria-current="page" href="Markets"><i class="bi bi-graph-up-arrow"></i>&nbsp; Markets </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link active" aria-current="page" href="Strategies"><i class="bi bi-clipboard-data"></i>&nbsp; Strategies </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link active" aria-current="page" href="Tradelogs"><i class="bi bi-graph-down"></i>&nbsp; Trade Logs </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link active" aria-current="page" href="TraderTypes"><i class="bi bi-stopwatch"></i>&nbsp; Trader Types </a>
+                                </li>
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="bi bi-arrow-left-right" aria-hidden="true"></i>&nbsp; Relations
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="haves"><i class="bi bi-bank"></i>&nbsp; Haves </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="trades"><i class="bi bi-bar-chart-line-fill"></i>&nbsp; Trades </a></li>
+                                    </ul>
+                                </li>
+
+                            </ul>                           
+                        </Authorized>
+                    </AuthorizeView>
+
+
+
+
+
+
+                    <AuthorizeView Roles="User">
+                        <Authorized>
+                            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                                <li class="nav-item">
+                                    <a class="nav-link active" aria-current="page" href="coins"><i class="bi bi-coin"></i>&nbsp; Coins  </a>
+                                </li>
+                            </ul>
+                        </Authorized>
+                    </AuthorizeView>
+
+
+
+
+                    <AuthorizeView>
+                        <Authorized>
+                            <div class="d-flex justify-content-end">
+                                @if (!string.IsNullOrEmpty(photoUser))
+                                {
+                                    <div class="btn-group dropstart">
+                                        <button class="dropdown-toggle rounded-circle" data-bs-toggle="dropdown" aria-expanded="false" style=" border: 0px; background: transparent;">
+                                            <img src="@photoUser" width="55" height="55" class="rounded-circle" />
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="">@context.User.Identity!.Name</a></li>
+                                            <li><button class="dropdown-item" @onclick=@(() => ShowModal()) type="button"><i class="bi bi-person-slash"></i>&nbsp; &nbsp; Edit User</button></li>
+                                            <li><button class="dropdown-item" @onclick="Logout" type="button"><i class="bi bi-box-arrow-left"></i>&nbsp; &nbsp; Logout</button></li>
+                                        </ul>
+                                    </div>
+                                }
+
+                                @if (string.IsNullOrEmpty(photoUser))
+                                {
+                                    <div class="btn-group dropstart">
+                                        <button class="dropdown-toggle rounded-circle" data-bs-toggle="dropdown" aria-expanded="false" style=" border: 0px; background: transparent;">
+                                            <img src="https://tradingjournalphotos.blob.core.windows.net/users/c5f44e7e-474f-4f15-b3f0-105908d56df7.jpg" width="55" height="55" class="rounded-circle" />
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="">@context.User.Identity!.Name</a></li>
+                                            <li><button class="dropdown-item" @onclick=@(() => ShowModal()) type="button"><i class="bi bi-person-slash"></i>&nbsp; &nbsp; Edit User</button></li>
+                                            <li><button class="dropdown-item" @onclick="Logout" type="button"><i class="bi bi-box-arrow-left"></i>&nbsp; &nbsp; Logout</button></li>
+                                        </ul>
+                                    </div>
+                                }
+                            </div>
+                        </Authorized>
+                    </AuthorizeView>
+
+                </div>
+            </div>
+        </nav>
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+
+
+@code {
+
+    [CascadingParameter]
+    IModalService Modal { get; set; } = default!;
+
+    private async Task ShowModal()
+    {
+        IModalReference modalReference;
+        modalReference = Modal.Show<Pages.Auth.EditUser>("Edit User");
+
+        var result = await modalReference.Result;
+        if (result.Confirmed)
+        {
+
+        }
+    }
+
+
+    private string photoUser;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; } = null!;
+    protected async override Task OnParametersSetAsync()
+
+    {
+        var authenticationState = await authenticationStateTask;
+
+        var photoClaim = authenticationState.User.Claims.FirstOrDefault(x => x.Type == "Photo"); ;
+
+        if (photoClaim is not null)
+
+        {
+            photoUser = photoClaim.Value;
+
+        }
+
+    }
+
+
+    private async Task Logout()
+    {
+        await loginService.LogoutAsync();
+        navigationManager.NavigateTo("/", true);
+    }
+
+
+    private void Edit()
+    {
+
+        navigationManager.NavigateTo("/edituser", true);
+    }
+
+
+
+    private async Task ShowModal2()
+    {
+        IModalReference modalReference;
+
+        modalReference = Modal.Show<Pages.Auth.Register>("Register");
+
+        var result = await modalReference.Result;
+        if (result.Confirmed)
+        {
+
+        }
+    }
+
+    private async Task ShowModal3()
+    {
+        IModalReference modalReference;
+
+        modalReference = Modal.Show<Pages.Auth.Login>("Login");
+
+        var result = await modalReference.Result;
+        if (result.Confirmed)
+        {
+
+        }
+    }
+}

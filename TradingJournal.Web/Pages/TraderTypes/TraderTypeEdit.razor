@@ -1,0 +1,95 @@
+﻿@page "/tradertypes/edit/{TraderTypeId:int}"
+@inject NavigationManager navigationManager
+@inject IRepository repository
+@inject SweetAlertService sweetAlertService
+@attribute [Authorize(Roles = "Admin")]
+
+<PageTitle>Trader Type Edit</PageTitle>
+
+
+<h3><i class="bi bi-pencil-square"></i> Edit Trader Type</h3>
+
+@if (tradertype is null)
+{
+    <div class="spinner" />
+}
+else
+{  
+    <TraderTypeForm TraderType="tradertype" OnValidSubmit="Editar" ReturnAction="Return" />
+    
+}
+
+@code {
+    [Parameter] 
+    public int TraderTypeId { get; set; }
+    private TraderType tradertype = new();
+
+    
+    protected override async Task OnInitializedAsync()
+    {
+
+        var responseHTTP = await repository.GetAsync<TraderType>($"api/tradertypes/{TraderTypeId}");
+
+        if (responseHTTP.Error)
+        {
+            if (responseHTTP.HttpResponseMessage.StatusCode == HttpStatusCode.NotFound)
+            {
+               
+                navigationManager.NavigateTo("tradertypes");
+                return;
+            }
+            else
+            {  
+                var mensajeError = await responseHTTP.GetErrorMessageAsync();
+                await sweetAlertService.FireAsync("Error", mensajeError, SweetAlertIcon.Error);
+                return;
+            }
+        }
+        else
+        {
+            
+            tradertype = responseHTTP.Response;
+        }
+    }
+
+    [CascadingParameter]
+    BlazoredModalInstance BlazoredModal { get; set; } = default!;
+    private async Task Editar()
+    {
+
+        var responseHTTP = await repository.PutAsync("api/tradertypes", tradertype);
+
+        if (responseHTTP.Error)
+        {
+            
+            var mensajeError = await responseHTTP.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", mensajeError, SweetAlertIcon.Error);
+        }
+        else
+        {
+            await BlazoredModal.CloseAsync(ModalResult.Ok());
+            Return();
+
+           
+            var Toast = sweetAlertService.Mixin(new SweetAlertOptions
+                {
+
+                    Toast = true,
+                    Position = SweetAlertPosition.BottomEnd,
+                    ShowConfirmButton = true,
+                    Timer = 3000
+
+                });
+
+            await Toast.FireAsync(icon: SweetAlertIcon.Success, message: "Trader Type modified successfully");
+
+        }
+    }
+       
+    
+    private void Return()
+    {
+        navigationManager.NavigateTo("tradertypes");
+
+    }
+}

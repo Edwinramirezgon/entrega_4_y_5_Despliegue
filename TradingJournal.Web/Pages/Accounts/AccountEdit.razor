@@ -1,0 +1,98 @@
+﻿@page "/account/edit/{AccountAccNumber:int}"
+@inject NavigationManager navigationManager
+@inject IRepository repository
+@inject SweetAlertService sweetAlertService
+@attribute [Authorize(Roles = "Admin")]
+
+<PageTitle>Account Edit</PageTitle>
+
+
+
+<h3><i class="bi bi-pencil-square"></i> Edit Account</h3>
+
+@if (account is null)
+{
+    <div class="spinner" />
+}
+else
+{   
+    <AccountForm Account="account" OnValidSubmit="Editar" ReturnAction="Return" />
+    
+}
+
+@code {
+    
+
+    [Parameter] 
+    public int AccountAccNumber { get; set; }
+    private Account account = new();
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        var responseHTTP = await repository.GetAsync<Account>($"api/account/{AccountAccNumber}");
+
+        if (responseHTTP.Error)
+        {
+            if (responseHTTP.HttpResponseMessage.StatusCode == HttpStatusCode.NotFound)
+            {
+
+                navigationManager.NavigateTo("account");
+                return;
+            }
+            else
+            {  
+                var mensajeError = await responseHTTP.GetErrorMessageAsync();
+                await sweetAlertService.FireAsync("Error", mensajeError, SweetAlertIcon.Error);
+                return;
+            }
+        }
+        else
+        {
+
+            account = responseHTTP.Response;
+        }
+    }
+    [CascadingParameter]
+    BlazoredModalInstance BlazoredModal { get; set; } = default!;
+    private async Task Editar()
+    {
+
+        var responseHTTP = await repository.PutAsync("api/account", account);
+
+        if (responseHTTP.Error)
+        {
+
+            var mensajeError = await responseHTTP.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", mensajeError, SweetAlertIcon.Error);
+        }
+        else
+        {
+            await BlazoredModal.CloseAsync(ModalResult.Ok());
+            Return();
+
+
+            var Toast = sweetAlertService.Mixin(new SweetAlertOptions
+                {
+
+                    Toast = true,
+                    Position = SweetAlertPosition.BottomEnd,
+                    ShowConfirmButton = true,
+                    Timer = 3000
+
+                });
+            
+          
+            await Toast.FireAsync(icon: SweetAlertIcon.Success, message: "Account modified successfully");
+
+        }
+    }
+       
+    
+    private void Return()
+    {
+        navigationManager.NavigateTo("/account");
+
+    }
+}

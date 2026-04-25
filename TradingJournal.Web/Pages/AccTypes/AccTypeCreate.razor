@@ -1,0 +1,57 @@
+﻿@page "/AccTypes/create"
+@inject IRepository repository
+@inject NavigationManager navigationManager
+@inject SweetAlertService sweetAlertService
+@attribute [Authorize(Roles = "Admin")]
+
+
+<PageTitle>Account Type Create</PageTitle>
+
+
+<h3><i class="bi bi-plus-circle"></i> Account Type Creation</h3>
+
+<AccTypeForm AccType="acctype" OnValidSubmit="Create" ReturnAction="Return"/>
+
+
+@code {
+    private AccType acctype = new();
+
+    [CascadingParameter]
+    BlazoredModalInstance BlazoredModal { get; set; } = default!;
+    private async Task Create()
+    {
+        var responseHttp = await repository.PostAsync("/api/AccTypes", acctype);
+
+        if (responseHttp.Error)
+        {
+       
+            var message = await responseHttp.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+        }
+        else
+        {
+            await BlazoredModal.CloseAsync(ModalResult.Ok());
+            Return();
+
+            var Toast = sweetAlertService.Mixin(new SweetAlertOptions
+                {
+
+                    Toast = true,
+                    Position = SweetAlertPosition.BottomEnd,
+                    ShowConfirmButton = true,
+                    Timer = 3000
+
+                });
+
+            await Toast.FireAsync(icon: SweetAlertIcon.Success, message: "Account Type successfully created");
+        }
+    }
+
+
+
+    private void Return()
+    {
+        navigationManager.NavigateTo("/AccTypes");
+    }
+
+}

@@ -1,0 +1,163 @@
+﻿@page "/Register"
+@inject SweetAlertService sweetAlertService
+@inject NavigationManager navigationManager
+@inject ILoginService loginService
+@inject IRepository Repository
+
+
+<PageTitle>Register</PageTitle>
+
+
+
+<EditForm Model="userDTO" OnValidSubmit="CreateUserAsync">
+    <DataAnnotationsValidator />
+
+
+    <div class="card">
+        <div class="card-header">
+            <span>
+                <i class="bi bi-person" /> Register New User
+                <button class="btn btn-dark float-end" type="submit">Submit Register</button>
+            </span>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-6">
+                    <div class="form-floating mb-3">
+                        <InputText class="form-control" id="floatingInput" placeholder="FirstName " @bind-Value="@userDTO.FirstName" />
+                        <label for="floatingInput">First Name:</label>
+                        <ValidationMessage For="@(() => userDTO.FirstName)" />
+                    </div>
+                    <div class="form-floating mb-3">
+                        <InputText class="form-control" id="floatingInput2" placeholder="Last Name" @bind-Value="@userDTO.LastName" />
+                        <label for="floatingInput2">Last Name:</label>
+                        <ValidationMessage For="@(() => userDTO.LastName)" />
+                    </div>
+                    <div class="form-floating mb-3">
+                        <InputText class="form-control" id="floatingInput3" placeholder="Identification Number :" @bind-Value="@userDTO.Document" />
+                        <label for="floatingInput3">Identification Number :</label>
+                        <ValidationMessage For="@(() => userDTO.Document)" />
+                    </div>
+
+                    <div class="form-floating mb-3">
+                        <InputText class="form-control" id="floatingInput4" placeholder="Phone Number " @bind-Value="@userDTO.PhoneNumber" />
+                        <label for="floatingInput4">Phone Number :</label>
+                        <ValidationMessage For="@(() => userDTO.PhoneNumber)" />
+                    </div>
+
+                    <div class="form-floating mb-3">
+                        <select class="form-select" id="floatingInput5" placeholder="Trader Type " @bind="@userDTO.TraderTypesId" >
+                            <option value="0">-- Select a Trader Type --</option>
+                            @if (TraderTypes is not null)
+                            {
+                                @foreach (var obj in TraderTypes)
+                                {
+                                    <option value="@obj.Id">@obj.Name</option>
+                                }
+                            }
+                        </select>
+                        <label for="floatingInput5">Trader Type:</label>
+                        <ValidationMessage For="@(() => userDTO.TraderTypesId)" />
+                    </div>
+
+                   
+                </div>
+                <div class="col-6">
+                    <div class="form-floating mb-3">
+                        <InputText class="form-control" id="floatingInput5" placeholder="Address" @bind-Value="@userDTO.Address" />
+                        <label for="floatingInput5">Address :</label>
+                        <ValidationMessage For="@(() => userDTO.Address)" />
+                    </div>
+                    <div class="form-floating mb-3">
+                        <InputText type="email" class="form-control" id="floatingInput6" placeholder="Email" @bind-Value="@userDTO.Email" />
+                        <label for="floatingInput6">Email :</label>
+                        <ValidationMessage For="@(() => userDTO.Email)" />
+                    </div>
+                    <div class="form-floating mb-3">
+                        <InputText type="password" class="form-control" id="floatingInput7" placeholder="Password" @bind-Value="@userDTO.Password" />
+                        <label for="floatingInput7">Password :</label>
+                        <ValidationMessage For="@(() => userDTO.Password)" />
+                    </div>
+                    <div class="form-floating mb-3">
+                        <InputText type="password" class="form-control" id="floatingInput7" placeholder="Password Confirmation" @bind-Value="@userDTO.PasswordConfirm" />
+                        <label for="floatingInput7">Password Confirmation :</label>
+                        <ValidationMessage For="@(() => userDTO.PasswordConfirm)" />
+                    </div>
+                    <div class="mb-3">
+                        <InputImg Label="Photo" ImageSelected="ImageSelected" ImageURL="@imageUrl" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+</EditForm>
+@code {
+    [CascadingParameter]
+    BlazoredModalInstance BlazoredModal { get; set; } = default!;
+
+    private async Task Charging()
+    {
+        var responseHTTP = await Repository.GetAsync<List<TraderType>>("/api/TraderTypes/combo");
+        TraderTypes = responseHTTP.Response!;
+    }
+
+    private List<TraderType> TraderTypes;
+    private User Users = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Charging();
+        if (!string.IsNullOrEmpty(userDTO.Photo))
+        {
+            imageUrl = userDTO.Photo;
+            userDTO.Photo = null;
+        }
+    }
+
+    private string imageUrl;
+    private UserDTO userDTO = new();
+
+    private void ImageSelected(string imagenBase64)
+    {
+        userDTO.Photo = imagenBase64;
+        imageUrl = null;
+    }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public bool IsAdmin { get; set; }
+    private async Task CreateUserAsync()
+    {
+        userDTO.UserName = userDTO.Email;
+        if (IsAdmin)
+        {
+            userDTO.UserType = UserType.Admin;
+        }
+        else
+        {
+            userDTO.UserType = UserType.User;
+        }
+        var responseHttp = await Repository.PostAsync<UserDTO>("/api/accounts/CreateUser", userDTO);
+        if (responseHttp.Error)
+        {
+            var message = await responseHttp.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            return;
+        }
+        await BlazoredModal.CloseAsync(ModalResult.Ok());
+        if (IsAdmin == true)
+        {
+            navigationManager.NavigateTo("/Users");
+        }
+        else
+        {
+            await sweetAlertService.FireAsync("confirm", "Your account has been successfully created. An email has been sent to you with instructions on how to activate your username.", SweetAlertIcon.Info);
+            navigationManager.NavigateTo("/", true);
+        }
+    }
+
+
+}

@@ -1,0 +1,285 @@
+﻿@page "/users"
+@inject IRepository repository
+@inject NavigationManager navigationManager
+@inject SweetAlertService sweetAlertService
+@attribute [Authorize(Roles = "Admin")]
+<PageTitle>User Index</PageTitle>
+
+
+@if (Users is null)
+
+{
+    <div class="spinner" />
+}
+
+else
+{
+    <GenericList MyList="Users">
+        <Body>
+            <div class="card">
+                <div class="card-header">
+                    <span>
+                        <i class="bi bi-person-badge"></i> Users
+                        <Pagination CurrentPage="currentPage"
+                                    TotalPages="totalPages"
+                                    SelectedPage="SelectedPage" />
+                        <a class="btn btn-sm btn-dark float-end" @onclick=@(() => ShowModal2())><i class="bi bi-plus"></i> Add Admin</a>
+                    </span>
+                </div>
+                <div class="mx-2">
+        <tr>
+
+            <th><input style="width: 400px;" type="text" class="form-control" id="titulo" placeholder="Search User by Email" @bind-value="Filter" /></th>
+            <th>    <button type="button" class="btn btn-outline-success" @onclick="ApplyFilterAsync">Filter</button></th>
+            <th>  <button type="button" class="btn btn-outline-warning" @onclick="CleanFilterAsync">Clean</button></th>
+        </tr>
+        </div>
+
+        <div class="card-body">
+            <div class="mb-2" style="display: flex; flex-wrap:wrap; align-items: center;">
+                <div>
+                </div>
+                <div class="mx-1">
+                </div>
+            </div>
+
+
+
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Photo</th>
+                        <th>User</th>
+                        <th>Document</th>
+                        <th>Phone</th>
+                        <th>Email</th>
+                        <th>Adress</th>
+                        <th>Confirm</th>
+                        <th>Trader Type</th>
+                        <th>User Type</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                            @foreach (var user in Users)
+                            {
+                                Tradertype(user.TraderTypesId);
+                        <tr>
+                            <td><img src="@user.Photo" width="80" height="80" style="border-radius:50%" /></td>
+                            <td>@user.FullName</td>
+                            <td>@user.Document</td>
+                            <td>@user.PhoneNumber</td>
+                            <td>@user.Email</td>
+                            <td>@user.Address</td>
+                            <td>@user.EmailConfirmed</td>
+                            <td>@tradertype</td>
+                            <td>@user.UserType</td>
+
+                            <td>
+
+                                <a @onclick=@(() => ShowModal(user.Id, true)) class="btn btn-outline-primary ">Edit <i class="bi bi-pencil-square"></i></a>
+                                <a @onclick=@(() => ShowModal3(user.Id, true)) class="btn btn-outline-secondary ">Trades <i class="bi bi-pencil-square"></i></a>
+                                <button class="btn btn-outline-danger" @onclick=@(() => Delete(user))>Delete <i class="bi bi-trash3"></i></button>
+                            </td>
+                        </tr>
+                            }
+                </tbody>
+            </table>
+        </div>
+        </div>
+        </Body>
+    </GenericList>
+}
+
+@code {
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string Page { get; set; } = "";
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string Filter { get; set; } = "";
+
+    [CascadingParameter]
+    IModalService Modal { get; set; } = default!;
+
+    private async Task ShowModal(string id = "", bool isEdit = false)
+
+    {
+        IModalReference modalReference;
+        modalReference = Modal.Show<UserEdit>("User Edit", new ModalParameters().Add("UserId", id));
+
+        var result = await modalReference.Result;
+        if (result.Confirmed)
+        {
+            await LoadAsync();
+        }
+    }
+
+    private async Task ShowModal2()
+
+    {
+        IModalReference modalReference;
+
+
+        modalReference = Modal.Show<Auth.Register>("Register",new ModalParameters().Add("IsAdmin", true));
+
+        var result = await modalReference.Result;
+        if (result.Confirmed)
+        {
+            await LoadAsync();
+        }
+    }
+
+
+    private async Task ShowModal3(string id = "", bool isEdit = false)
+
+    {
+        IModalReference modalReference;
+        modalReference = Modal.Show<TradesUser>("Trades", new ModalParameters().Add("UserId", id));
+
+        var result = await modalReference.Result;
+        if (result.Confirmed)
+        {
+            await LoadAsync();
+        }
+    }
+
+
+    public string tradertype { get; set; }
+
+    public List<TraderType> TraderTypes { get; set; }
+
+    public List<User> Users { get; set; }
+
+    protected async override Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private int currentPage = 1;
+    private int totalPages;
+
+
+
+
+    private async Task SelectedPage(int page)
+    {
+        currentPage = page;
+        await LoadAsync(page);
+    }
+
+
+
+
+
+
+    private async Task LoadAsync(int page = 1)
+    {
+
+        if (!string.IsNullOrWhiteSpace(Page))
+        {
+            page = Convert.ToInt32(Page);
+        }
+        string url1 = string.Empty;
+        string url2 = string.Empty;
+        if (string.IsNullOrEmpty(Filter))
+        {
+            url1 = $"api/Users?page={page}";
+            url2 = $"api/Users/totalPages";
+        }
+        else
+        {
+            url1 = $"api/Users?page={page}&filter={Filter}";
+            url2 = $"api/Users/totalPages?filter={Filter}";
+        }
+
+        var responseHppt = await repository.GetAsync<List<User>>(url1);
+        var responseHppt2 = await repository.GetAsync<int>(url2);
+        Users = responseHppt.Response!;
+        totalPages = responseHppt2.Response!;
+
+        var response2HTTP = await repository.GetAsync<List<TraderType>>("/api/TraderTypes");
+        TraderTypes = response2HTTP.Response!;
+
+
+    }
+
+
+
+    private async Task Delete(User user)
+    {
+
+        var result = await sweetAlertService.FireAsync(new SweetAlertOptions
+            {
+                Title = "Confirm",
+                Text = $"You really want to delete the User : {user.FullName}?",
+                Icon = SweetAlertIcon.Question,
+                ShowCancelButton = true,
+                CancelButtonText = "No",
+                ConfirmButtonText = "yes"
+            });
+
+        var confirm = string.IsNullOrEmpty(result.Value);
+        if (confirm)
+        {
+            return;
+        }
+
+        var responseHTTP = await repository.DeleteAsync($"/api/users/{user.Id}");
+
+        if (responseHTTP.Error)
+        {
+            if (responseHTTP.HttpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                navigationManager.NavigateTo("/users");
+            }
+            else
+            {
+                var mensajeError = await responseHTTP.GetErrorMessageAsync();
+                await sweetAlertService.FireAsync("Error", mensajeError, SweetAlertIcon.Error);
+            }
+        }
+        else
+        {
+
+            await LoadAsync();
+
+            var toast = sweetAlertService.Mixin(new SweetAlertOptions
+                {
+                    Toast = true,
+                    ShowConfirmButton = true,
+                    Timer = 3000,
+                    Position = SweetAlertPosition.BottomEnd
+                });
+            toast.FireAsync(icon: SweetAlertIcon.Success, message: "User Successfully Deleted.");
+        }
+    }
+
+    private void Tradertype(int? selection)
+
+    {
+        tradertype = "";
+        foreach (var tradert in TraderTypes!)
+        {
+            if (selection == tradert.Id)
+            {
+                tradertype = tradert.Name;
+            }
+
+        }
+    }
+
+    private async Task CleanFilterAsync()
+    {
+        Filter = string.Empty;
+        await ApplyFilterAsync();
+    }
+    private async Task ApplyFilterAsync()
+    {
+        int page = 1;
+        await LoadAsync(page);
+        await SelectedPage(page);
+    }
+}
+

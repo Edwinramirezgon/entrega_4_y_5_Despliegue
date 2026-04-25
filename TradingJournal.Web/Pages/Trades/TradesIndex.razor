@@ -1,0 +1,293 @@
+﻿@page "/Trades"
+@attribute [Authorize(Roles = "Admin")]
+@inject IRepository Repository
+@inject SweetAlertService sweetAlertService
+@inject NavigationManager navigationManager
+
+<PageTitle>Trade Index</PageTitle>
+
+
+<h3><i class="bi bi-bar-chart-line-fill" /> Trades</h3>
+<Pagination CurrentPage="currentPage"
+            TotalPages="totalPages"
+            SelectedPage="SelectedPage" />
+<div class="card">
+    <div class="card-header">
+        <span>
+            <a class="btn btn-dark btn-sm float-start" @onclick=@(() => ShowModal2())><i class="bi bi-plus-circle" /> New Trade</a>
+
+        </span>
+    </div>
+
+    <div class="mx-2">
+
+        <tr>
+
+            <th><input style="width: 400px;" type="text" class="form-control" id="titulo" placeholder="Search Trade by Id" @bind-value="Filter" /></th>
+
+            <th>    <button type="button" class="btn btn-outline-success" @onclick="ApplyFilterAsync">Filter</button></th>
+
+            <th>  <button type="button" class="btn btn-outline-warning" @onclick="CleanFilterAsync">Clean</button></th>
+        </tr>
+
+
+
+    </div>
+
+    <div class="card-body">
+
+        <GenericList MyList="Trades">
+
+            <Body>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+
+                            <td>
+                                <b>Trade Id</b>
+                            </td>
+                            
+                            <td>
+                                <b>Trader</b>
+                            </td>
+                            <td>
+                                <b>Market</b>
+                            </td>
+
+                        </tr>
+                        @foreach (var trade in Trades!)
+                        {
+                            TraderName(trade.UsersId);
+                            MarketName(trade.MarketsCode);
+                            <tr>
+                                <td>
+                                    @trade.Id
+                                </td>
+                                <td>
+                                    @tradername
+                                </td>
+                                <td>
+                                    @marketname
+                                </td>
+
+
+                                <td>
+                                    <a @onclick=@(() => ShowModal(trade.Id, true)) class="btn btn-outline-primary ">Edit <i class="bi bi-pencil-square"></i></a>
+                                    <button class="btn btn-outline-danger" @onclick=@(() => Delete(trade))>Delete <i class="bi bi-trash3"></i></button>
+                                </td>
+
+                            </tr>
+                        }
+
+
+                    </tbody>
+                </table>
+
+            </Body>
+
+        </GenericList>
+    </div>
+</div>
+
+
+
+@code {
+
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string Page { get; set; } = "";
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string Filter { get; set; } = "";
+    [CascadingParameter]
+    IModalService Modal { get; set; } = default!;
+
+    private async Task ShowModal(int id = 0, bool isEdit = false)
+
+    {
+        IModalReference modalReference;
+        modalReference = Modal.Show<TradeEdit>("Trader Edit", new ModalParameters().Add("TradeId", id));
+
+        var result = await modalReference.Result;
+        if (result.Confirmed)
+        {
+            await Charging();
+        }
+    }
+
+    private async Task ShowModal2()
+
+    {
+        IModalReference modalReference;
+
+
+        modalReference = Modal.Show<TradeCreate>("TRader Create");
+
+        var result = await modalReference.Result;
+        if (result.Confirmed)
+        {
+            await Charging();
+        }
+    }
+
+    public string tradername { get; set; }
+
+    public string marketname { get; set; }
+
+    public List<Trade> Trades { get; set; }
+
+    public List<User> Users { get; set; }
+
+    public List<Market> Markets { get; set; }
+
+
+    protected async override Task OnInitializedAsync()
+    {
+        await Charging();
+    }
+
+    private int currentPage = 1;
+    private int totalPages;
+
+
+
+
+    private async Task SelectedPage(int page)
+    {
+        currentPage = page;
+        await Charging(page);
+    }
+
+
+    private async Task Charging(int page = 1)
+
+    {
+
+        if (!string.IsNullOrWhiteSpace(Page))
+        {
+            page = Convert.ToInt32(Page);
+        }
+        string url1 = string.Empty;
+        string url2 = string.Empty;
+        if (string.IsNullOrEmpty(Filter))
+        {
+            url1 = $"api/Trades?page={page}";
+            url2 = $"api/Trades/totalPages";
+        }
+        else
+        {
+            url1 = $"api/Trades?page={page}&filter={Filter}";
+            url2 = $"api/Trades/totalPages?filter={Filter}";
+        }
+
+
+        var responseHppt = await Repository.GetAsync<List<Trade>>(url1);
+        var responseHppt2 = await Repository.GetAsync<int>(url2);
+        Trades = responseHppt.Response!;
+        totalPages = responseHppt2.Response!;
+
+        var response2HTTP = await Repository.GetAsync<List<Market>>("/api/Markets");
+        Markets = response2HTTP.Response!;
+
+        var response3HTTP = await Repository.GetAsync<List<User>>("/api/Users");
+        Users = response3HTTP.Response!;
+
+
+
+    }
+
+    private async Task CleanFilterAsync()
+    {
+        Filter = string.Empty;
+        await ApplyFilterAsync();
+    }
+    private async Task ApplyFilterAsync()
+    {
+        int page = 1;
+        await Charging(page);
+        await SelectedPage(page);
+    }
+
+
+    private async Task Delete(Trade trade)
+    {
+
+        var result = await sweetAlertService.FireAsync(new SweetAlertOptions
+            {
+                Title = "Confirm",
+                Text = $"You really want to delete the Trade : {trade.Id}?",
+                Icon = SweetAlertIcon.Question,
+                ShowCancelButton = true,
+                CancelButtonText = "No",
+                ConfirmButtonText = "yes"
+            });
+
+        var confirm = string.IsNullOrEmpty(result.Value);
+        if (confirm)
+        {
+            return;
+        }
+
+        var responseHTTP = await Repository.DeleteAsync($"/api/trades/{trade.Id}");
+
+        if (responseHTTP.Error)
+        {
+            if (responseHTTP.HttpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                navigationManager.NavigateTo("/trades");
+            }
+            else
+            {
+                var mensajeError = await responseHTTP.GetErrorMessageAsync();
+                await sweetAlertService.FireAsync("Error", mensajeError, SweetAlertIcon.Error);
+            }
+        }
+        else
+        {
+
+            await Charging();
+
+            var toast = sweetAlertService.Mixin(new SweetAlertOptions
+                {
+                    Toast = true,
+                    ShowConfirmButton = true,
+                    Timer = 3000,
+                    Position = SweetAlertPosition.BottomEnd
+                });
+            toast.FireAsync(icon: SweetAlertIcon.Success, message: "Trade Successfully Deleted.");
+        }
+    }
+
+    private void TraderName(string? selection)
+
+    {
+        tradername = "";
+        foreach (var trader in Users!)
+        {
+            if (selection == trader.Id)
+            {
+                tradername = trader.Email;
+            }
+
+        }
+    }
+
+    private void MarketName(int? selection)
+
+    {
+        marketname = "";
+        foreach (var market in Markets!)
+        {
+            if (selection == market.Code)
+            {
+                marketname = market.Name;
+            }
+
+        }
+    }
+}

@@ -1,0 +1,267 @@
+﻿@page "/Brokers"
+@attribute [Authorize(Roles = "Admin")]
+@inject IRepository Repository
+@inject SweetAlertService sweetAlertService
+@inject NavigationManager navigationManager
+
+
+<PageTitle>Broker Index</PageTitle>
+
+
+<h3><i class="bi bi-piggy-bank-fill" /> Brokers</h3>
+
+<Pagination CurrentPage="currentPage"
+            TotalPages="totalPages"
+            SelectedPage="SelectedPage" />
+<div class="card">
+    <div class="card-header">
+        <span>
+            <a class="btn btn-dark btn-sm float-start" @onclick=@(() => ShowModal2())><i class="bi bi-plus-circle" /> New Broker</a>
+
+        </span>
+    </div>
+
+    <div class="mx-2">
+
+        <tr>
+
+            <th><input style="width: 400px;" type="text" class="form-control" id="titulo" placeholder="Search Broker by Name" @bind-value="Filter" /></th>
+
+            <th>    <button type="button" class="btn btn-outline-success" @onclick="ApplyFilterAsync">Filter</button></th>
+
+            <th>  <button type="button" class="btn btn-outline-warning" @onclick="CleanFilterAsync">Clean</button></th>
+        </tr>
+
+
+
+    </div>
+
+    <div class="card-body">
+
+        <GenericList MyList="Brokers">
+
+            <Body>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+
+                            <td>
+                                <b>Broker Id</b>
+                            </td>
+                            <td>
+                                <b>Name</b>
+                            </td>
+                            <td>
+                                <b>Address</b>
+                            </td>
+                            <td>
+                                <b>Phone</b>
+                            </td>
+                            <td>
+                                <b>License Number</b>
+                            </td>
+                            <td>
+                                <b>Actions</b>
+                            </td>
+
+                        </tr>
+                        @foreach (var broker in Brokers!)
+                        {
+
+                            <tr>
+                                <td>
+                                    @broker.Id
+                                </td>
+                                <td>
+                                    @broker.Name
+                                </td>
+                                <td>
+                                    @broker.Address
+                                </td>
+                                <td>
+                                    @broker.Phone
+                                </td>
+                                <td>
+                                    @broker.LicenseNumber
+                                </td>
+                                <td>
+                                    <a @onclick=@(() => ShowModal(broker.Id, true)) class="btn btn-outline-primary ">Edit <i class="bi bi-pencil-square"></i></a>
+                                    <button class="btn btn-outline-danger" @onclick=@(() => Delete(broker))>Delete <i class="bi bi-trash3"></i></button>
+                                </td>
+
+                            </tr>
+                        }
+
+
+                    </tbody>
+                </table>
+
+            </Body>
+
+        </GenericList>
+    </div>
+</div>
+
+
+
+@code {
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string Page { get; set; } = "";
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string Filter { get; set; } = "";
+
+    [CascadingParameter]
+    IModalService Modal { get; set; } = default!;
+
+    private async Task ShowModal(int id = 0, bool isEdit = false)
+
+    {
+        IModalReference modalReference;
+        modalReference = Modal.Show<BrokerEdit>("Broker Edit", new ModalParameters().Add("BrokerId", id));
+
+        var result = await modalReference.Result;
+        if (result.Confirmed)
+        {
+            await Charging();
+        }
+    }
+
+    private async Task ShowModal2()
+
+    {
+        IModalReference modalReference;
+
+
+        modalReference = Modal.Show<BrockerCreate>("Broker Create");
+
+        var result = await modalReference.Result;
+        if (result.Confirmed)
+        {
+            await Charging();
+        }
+    }
+
+    public List<Broker> Brokers { get; set; }
+
+
+    protected async override Task OnInitializedAsync()
+    {
+        await Charging();
+    }
+
+
+
+
+    private int currentPage = 1;
+    private int totalPages;
+
+
+
+
+    private async Task SelectedPage(int page)
+    {
+        currentPage = page;
+        await Charging(page);
+    }
+
+
+    private async Task Charging(int page = 1)
+    {
+
+        if (!string.IsNullOrWhiteSpace(Page))
+        {
+            page = Convert.ToInt32(Page);
+        }
+        string url1 = string.Empty;
+        string url2 = string.Empty;
+        if (string.IsNullOrEmpty(Filter))
+        {
+            url1 = $"api/Brokers?page={page}";
+            url2 = $"api/Brokers/totalPages";
+        }
+        else
+        {
+            url1 = $"api/Brokers?page={page}&filter={Filter}";
+            url2 = $"api/Brokers/totalPages?filter={Filter}";
+        }
+
+
+        var responseHppt = await Repository.GetAsync<List<Broker>>(url1);
+        var responseHppt2 = await Repository.GetAsync<int>(url2);
+        Brokers = responseHppt.Response!;
+        totalPages = responseHppt2.Response!;
+
+
+    }
+
+    private async Task CleanFilterAsync()
+    {
+        Filter = string.Empty;
+        await ApplyFilterAsync();
+    }
+    private async Task ApplyFilterAsync()
+    {
+        int page = 1;
+        await Charging(page);
+        await SelectedPage(page);
+    }
+
+   
+
+
+    private async Task Delete(Broker broker)
+    {
+
+        var result = await sweetAlertService.FireAsync(new SweetAlertOptions
+            {
+                Title = "Confirm",
+                Text = $"You really want to delete the Broker : {broker.Name}?",
+                Icon = SweetAlertIcon.Question,
+                ShowCancelButton = true,
+                CancelButtonText = "No",
+                ConfirmButtonText = "yes"
+            });
+
+        var confirm = string.IsNullOrEmpty(result.Value);
+        if (confirm)
+        {
+            return;
+        }
+
+        var responseHTTP = await Repository.DeleteAsync($"/api/Brokers/{broker.Id}");
+
+        if (responseHTTP.Error)
+        {
+            if (responseHTTP.HttpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                navigationManager.NavigateTo("/Brokers");
+            }
+            else
+            {
+                var mensajeError = await responseHTTP.GetErrorMessageAsync();
+                await sweetAlertService.FireAsync("Error", mensajeError, SweetAlertIcon.Error);
+            }
+        }
+        else
+        {
+
+            await Charging();
+
+            var toast = sweetAlertService.Mixin(new SweetAlertOptions
+                {
+                    Toast = true,
+                    ShowConfirmButton = true,
+                    Timer = 3000,
+                    Position = SweetAlertPosition.BottomEnd
+                });
+            toast.FireAsync(icon: SweetAlertIcon.Success, message: "Broker Successfully Deleted.");
+        }
+    }
+}

@@ -1,0 +1,102 @@
+﻿@page "/info/{id}"
+@inject IRepository Repository
+@attribute [Authorize(Roles = "Admin, User")]
+
+<PageTitle>Coin Info</PageTitle>
+
+
+@if (coin == null)
+{
+    <div class="spinner" />
+}
+else
+{
+<div class="card">
+    <div class="card-header">
+            <i class="bi bi-coin" /> @coin?.Name (@coin?.Symbol)
+    </div>
+       
+    <div class="card-body">
+
+        <Body>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                         
+                    </tr>
+                </thead>
+                <tbody>
+                <td>
+
+                <tr>
+                    <b>Description</b>
+                </tr>
+                <br />
+                   
+                <tr>
+                     @(coin.Description?.En)
+                </tr>
+                <br />
+                    <tr>
+                        <b>Genesis Date</b>
+                    </tr>
+                    <br />
+                    <tr>
+                               
+                              @coin.genesis_date
+                               
+                                
+                    </tr>
+                    <br />
+
+              
+              
+                <tr>
+                    <h4>Links:</h4>
+                    <ul>
+                                @if (coin.Links?.Homepage != null)
+                                {
+                                    @foreach (var link in coin.Links.Homepage)
+                                    {
+                                <li><a href="@link" >@link</a></li>
+                                    }
+                                }
+                               
+                    </ul>
+                </tr>
+                <br />
+
+                </td>
+
+                </tbody>
+            </table>
+
+        </Body>
+
+
+    </div>
+</div>
+
+}
+
+@code {
+    [Parameter]
+    public string Id { get; set; }
+
+    private CoinDetail coin;
+    [CascadingParameter]
+    BlazoredModalInstance BlazoredModal { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        string url = $"/coins/{Id}?";
+
+        var responseHppt = await Repository.GetAsync<CoinDetail>( url,"coin");
+        coin = responseHppt.Response!;      
+       
+    }
+
+ 
+}
+
+

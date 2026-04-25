@@ -1,0 +1,78 @@
+﻿@inject IRepository Repository
+@attribute [Authorize(Roles = "Admin")]
+
+<EditForm Model="Have" OnValidSubmit="OnValidSubmit">
+
+    <DataAnnotationsValidator />
+
+    <div class="form-floating mb-3">
+        <select class="form-select" id="floatingInput" placeholder="Trader" @bind="@Have.UsersId">
+            <option value="0">-- Select a Trader --</option>
+            @if (Users is not null)
+            {
+                @foreach (var obj in Users)
+                {
+                    <option value="@obj.Id">@obj.Email</option>
+                }
+            }
+        </select>
+        <label for="floatingInput">Trader :</label>
+        <ValidationMessage For="@(() => Have.UsersId)" />
+    </div>
+
+
+    <div class="form-floating mb-3">
+        <select class="form-select" id="floatingInput2" placeholder="Strategy" @bind="@Have.StrategiesCode">
+            <option value="0">-- Select a Strategy --</option>
+            @if (Strategies is not null)
+            {
+                @foreach (var obj in Strategies)
+                {
+                    <option value="@obj.Code">@obj.Name</option>
+                }
+            }
+        </select>
+        <label for="floatingInput2">Strategy :</label>
+        <ValidationMessage For="@(() => Have.StrategiesCode)" />
+    </div> 
+
+    <button class="btn btn-dark" type="submit">Save <i class="bi bi-floppy2"></i></button>
+    <button class="btn btn-info" type="reset">Clean <i class="bi bi-x-octagon"></i></button>
+    <button class="btn btn-secondary" @onclick="ReturnAction">Return <i class="bi bi-arrow-clockwise"></i></button>
+</EditForm>
+
+@code {
+    private List<User> Users;
+    private List<Strategy> Strategies;
+    
+    protected async override Task OnInitializedAsync()
+    {
+        await Charging();
+    }
+
+    private async Task Charging()
+    {
+        var responseHTTP = await Repository.GetAsync<List<Strategy>>("/api/Strategies/combo");
+        Strategies = responseHTTP.Response!;
+
+        var response2HTTP = await Repository.GetAsync<List<User>>("/api/Users/combo");
+        Users = response2HTTP.Response!;        
+    }
+
+
+    [EditorRequired]
+    [Parameter]
+    public Have Have { get; set; }
+
+
+    [EditorRequired]
+    [Parameter]
+    public EventCallback OnValidSubmit { get; set; }
+
+
+    [EditorRequired]
+    [Parameter]
+    public EventCallback ReturnAction { get; set; }
+
+
+}

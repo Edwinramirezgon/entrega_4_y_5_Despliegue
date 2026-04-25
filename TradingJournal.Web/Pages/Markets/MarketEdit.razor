@@ -1,0 +1,93 @@
+﻿@page "/Markets/edit/{MarketCode:int}"
+@inject NavigationManager navigationManager
+@inject IRepository repository
+@inject SweetAlertService sweetAlertService
+@attribute [Authorize(Roles = "Admin")]
+
+
+<PageTitle>Market Edit</PageTitle>
+
+
+<h3><i class="bi bi-pencil-square"></i> Edit Market</h3>
+
+@if (market is null)
+{
+    <div class="spinner" />
+}
+else
+{
+    <MarketForm Market="market" OnValidSubmit="Edit" ReturnAction="Return" />
+    
+}
+
+@code {
+    [Parameter] 
+    public int MarketCode { get; set; }
+    private Market market = new();
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        var responseHTTP = await repository.GetAsync<Market>($"api/Markets/{MarketCode}");
+
+        if (responseHTTP.Error)
+        {
+            if (responseHTTP.HttpResponseMessage.StatusCode == HttpStatusCode.NotFound)
+            {
+
+                navigationManager.NavigateTo("Markets");
+                return;
+            }
+            else
+            {  
+                var mensajeError = await responseHTTP.GetErrorMessageAsync();
+                await sweetAlertService.FireAsync("Error", mensajeError, SweetAlertIcon.Error);
+                return;
+            }
+        }
+        else
+        {
+        
+            market = responseHTTP.Response;
+        }
+    }
+
+    [CascadingParameter]
+    BlazoredModalInstance BlazoredModal { get; set; } = default!;
+    private async Task Edit()
+    {
+
+        var responseHTTP = await repository.PutAsync("api/Markets", market);
+
+        if (responseHTTP.Error)
+        {
+          
+            var mensajeError = await responseHTTP.GetErrorMessageAsync();
+            await sweetAlertService.FireAsync("Error", mensajeError, SweetAlertIcon.Error);
+        }
+        else
+        {
+            await BlazoredModal.CloseAsync(ModalResult.Ok());
+            Return();
+
+        
+            var Toast = sweetAlertService.Mixin(new SweetAlertOptions
+                {
+                    Toast = true,
+                    Position = SweetAlertPosition.BottomEnd,
+                    ShowConfirmButton = true,
+                    Timer = 3000
+                });
+
+            await Toast.FireAsync(icon: SweetAlertIcon.Success, message: "Market modified successfully");
+
+        }
+    }
+       
+    
+    private void Return()
+    {
+        navigationManager.NavigateTo("Markets");
+    }
+}

@@ -1,0 +1,108 @@
+﻿@inject IRepository Repository
+@attribute [Authorize(Roles = "Admin")]
+
+<EditForm Model="Account" OnValidSubmit="OnValidSubmit">
+
+    <DataAnnotationsValidator />
+
+    <div class="form-floating mb-3">
+        <select class="form-select" id="floatingInput" placeholder="Broker " @bind="@Account.BrokersId">
+            <option value="0">-- Select a Broker --</option>
+            @if (Brokers is not null)
+            {
+                @foreach (var obj in Brokers)
+                {
+                    <option value="@obj.Id">@obj.Name</option>
+                }
+            }
+        </select>
+        <label for="floatingInput">Broker:</label>
+        <ValidationMessage For="@(() => Account.BrokersId)" />
+    </div>
+
+    <div class="form-floating mb-3">
+        <select class="form-select" id="floatingInput2" placeholder="Trader " @bind="@Account.UsersId">
+            <option value="0">-- Select a Trader --</option>
+            @if (Users is not null)
+            {
+                @foreach (var obj in Users)
+                {
+                    <option value="@obj.Id">@obj.Email</option>
+                }
+            }
+        </select>
+        <label for="floatingInput2">Trader:</label>
+        <ValidationMessage For="@(() => Account.UsersId)" />
+    </div>
+
+
+    <div class="form-floating mb-3">
+        <select class="form-select" id="floatingInput3" placeholder="Account Type " @bind="@Account.AccTypesId">
+            <option value="0">-- Select a Account Type --</option>
+            @if (AccTypes is not null)
+            {
+                @foreach (var obj in AccTypes)
+                {
+                    <option value="@obj.Id">@obj.Name</option>
+                }
+            }
+        </select>
+        <label for="floatingInput3">Account Type:</label>
+        <ValidationMessage For="@(() => Account.AccTypesId)" />
+    </div>
+
+    
+    <div class="form-floating mb-3">
+        <InputDate class="form-control" id="floatingInput" placeholder="Creation Date" @bind-Value="@Account.CreationDate" />
+        <label for="floatingInput">Creation Date :</label>
+        <ValidationMessage For="@(() => @Account.CreationDate)" />
+    </div>
+
+    <div class="form-floating mb-3">
+        <InputNumber class="form-control" id="floatingInput2" placeholder="Initial Balance" @bind-Value="@Account.InitialBalance" />
+        <label for="floatingInput2">Initial Balance :</label>
+        <ValidationMessage For="@(() => @Account.InitialBalance)" />
+    </div>
+
+    <button class="btn btn-dark" type="submit">Save <i class="bi bi-floppy2"></i></button>
+    <button class="btn btn-info" type="reset">Clean <i class="bi bi-x-octagon"></i></button>
+    <button class="btn btn-secondary" @onclick="ReturnAction">Return <i class="bi bi-arrow-clockwise"></i></button>
+
+</EditForm>
+
+@code {
+    private List<Broker> Brokers;
+    private List<User> Users;
+    private List<AccType> AccTypes;
+
+    protected async override Task OnInitializedAsync()
+    {
+        await Charging();
+    }
+
+    private async Task Charging()
+    {
+        var responseHTTP = await Repository.GetAsync<List<Broker>>("/api/brokers/combo");
+        Brokers = responseHTTP.Response!;
+
+        var response2HTTP = await Repository.GetAsync<List<User>>("/api/Users/combo");
+        Users = response2HTTP.Response!;
+
+        var response3HTTP = await Repository.GetAsync<List<AccType>>("/api/acctypes/combo");
+        AccTypes = response3HTTP.Response!;
+    }
+
+    [EditorRequired]
+    [Parameter]
+    public Account Account { get; set; }
+
+    [EditorRequired]
+    [Parameter]
+    public EventCallback OnValidSubmit { get; set; }
+
+    [EditorRequired]
+    [Parameter]
+    public EventCallback ReturnAction { get; set; }
+
+
+}

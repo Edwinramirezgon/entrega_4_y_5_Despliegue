@@ -1,0 +1,196 @@
+﻿@page "/chart/{id},{Name}"
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject IRepository Repository
+
+<div class="d-flex justify-content-end">
+    <div class="px-2">
+        <h3>
+           
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            @Name (Last @days Days)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+           
+        </h3>
+    </div>
+    <div class="px-2">
+        <div class="form-floating mb-3">
+            <select class="form-select" id="floatingInput" placeholder="Days " @onchange="OnDaysChanged">
+                <option value="0">-- Select Chart Days --</option>
+                <option value="1">-- 1 Day --</option>
+                <option value="7">-- 7 Days --</option>
+                <option value="14">-- 14 Days --</option>
+                <option value="30">-- 30 Days --</option>
+                <option value="90">-- 90 Days --</option>
+                <option value="180">-- 180 Days --</option>
+                <option value="365">-- 365 Days --</option>
+            </select>
+            <label for="floatingInput">Days:</label>
+        </div>
+    </div>
+    <div class="px-4">
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+         <a @onclick="ResetZoom" class="btn btn-outline-info ">Reset Zoom <i class="bi bi-arrow-clockwise"></i></a>     
+       
+    </div>        
+  
+</div>
+
+
+
+
+
+<canvas id="myChart" width="1200" height="600"></canvas>
+
+<script>
+    function createChart(labels, data) {
+        const easing = Chart.helpers.easingEffects.easeInQuad;
+        const totalDuration = 500;
+
+        const duration = (ctx) => easing(ctx.index / data.length) * totalDuration / data.length;
+        const delay = (ctx) => easing(ctx.index / data.length) * totalDuration;
+        const previousY = (ctx) => ctx.index === 0 ? ctx.chart.scales.y.getPixelForValue(100) : ctx.chart.getDatasetMeta(ctx.datasetIndex).data[ctx.index - 1].getProps(['y'], true).y;
+
+        const animation = {
+            x: {
+                type: 'number',
+                easing: 'linear',
+                duration: duration,
+                from: NaN, 
+                delay(ctx) {
+                    if (ctx.type !== 'data' || ctx.xStarted) {
+                        return 0;
+                    }
+                    ctx.xStarted = true;
+                    return delay(ctx);
+                }
+            },
+            y: {
+                type: 'number',
+                easing: 'linear',
+                duration: duration,
+                from: previousY,
+                delay(ctx) {
+                    if (ctx.type !== 'data' || ctx.yStarted) {
+                        return 0;
+                    }
+                    ctx.yStarted = true;
+                    return delay(ctx);
+                }
+            }
+        };
+
+        const ctx = document.getElementById('myChart').getContext('2d');
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Price in USD',
+                    data: data,
+                    borderWidth: 1,
+                    backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                    borderColor: 'rgb(153, 102, 255)',
+                    fill: true,
+                    tension: 0.5,
+                }]
+            },
+            options: {
+                animations: animation,
+                plugins: {
+                    zoom: {
+                        pan: {
+                            enabled: true,
+                            mode: 'xy',
+                            threshold: 10,                       
+                            modifierKey: null 
+                        },
+                        zoom: {
+
+                            wheel: {
+                                enabled: true,
+                                speed: 0.1 
+                            },
+                            pinch: {
+                                enabled: true
+                            },
+                            mode: 'xy',
+                           
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: false
+                    },
+                    y: {
+                        beginAtZero: false
+                    }
+                }
+            }
+        });
+    }
+         
+   
+    function destroyChart(chartId) {
+        var chart = Chart.getChart(chartId);
+        if (chart !== undefined) {
+            chart.destroy();
+        }
+    }
+
+    function resetZoom(chartId) {
+        var chart = Chart.getChart(chartId);
+        if (chart !== undefined) {
+            chart.resetZoom();
+        }
+    }
+
+</script>
+
+@code {
+    [Parameter]
+    public string Id { get; set; }
+
+    [Parameter]
+    public string Name { get; set; }
+
+    public int days { get; set; } = 30;
+  
+    public MarketChart CoinList { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {        
+        string url = $"/coins/{Id}/market_chart?vs_currency=usd&days={days}&precision=4";
+
+        var responseHppt = await Repository.GetAsync<MarketChart>(url, "coin");       
+        var coins = responseHppt.Response!.Prices.Select(x => new { Date = new DateTime(1970, 1, 1).AddMilliseconds((long)x[0]), Value = x[1] }).ToList();
+        await JSRuntime.InvokeVoidAsync("createChart", coins.Select(p => p.Date.ToString()).ToList(), coins.Select(p => p.Value).ToList());
+      
+    }
+    private async Task Reload()
+    {
+        await JSRuntime.InvokeVoidAsync("destroyChart", "myChart");
+        await LoadData();
+    }
+
+    private async Task ResetZoom()
+    {
+        await JSRuntime.InvokeVoidAsync("resetZoom", "myChart");    
+    }
+     private void OnDaysChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value.ToString(), out int selectedDays))
+        {
+            days = selectedDays;
+            Reload();
+        }
+    }
+}
