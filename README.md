@@ -2,11 +2,11 @@
 
 ## Integrantes del equipo
 
-Edwin Ramirez Gonzalez
-Juan Jose Rua David
-Felipe Olaya Beneitez
-Julian Andres Ramirez Bedoya
-Argenis Alejandro Ruiz Cotes
+- Edwin Ramirez Gonzalez
+- Juan Jose Rua David
+- Felipe Olaya Beneitez
+- Julian Andres Ramirez Bedoya
+- Argenis Alejandro Ruiz Cotes
 
 ---
 
