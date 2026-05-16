@@ -1,0 +1,64 @@
+# ASP.NET Core
+# Build and test ASP.NET Core projects targeting .NET Core.
+# Add steps that run tests, create a NuGet package, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
+
+trigger:
+- main
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  buildConfiguration: 'Release'
+  apiProject: 'TradingJournal.API/TradingJournal.API.csproj'
+  webProject: 'TradingJournal.Web/TradingJournal.Web.csproj'
+
+steps:
+- task: UseDotNet@2
+  displayName: 'ASP.NET Core 8'
+  inputs:
+    packageType: 'sdk'
+    version: '8.0.x'
+    includePreviewVersions: true
+
+- task: CmdLine@2
+  displayName: 'Installing EF Core CLI'
+  inputs:
+    script: 'dotnet tool install --global dotnet-ef'
+
+- script: dotnet build --configuration $(buildConfiguration) $(apiProject)
+  displayName: 'dotnet build $(buildConfiguration) API'
+
+- script: dotnet build --configuration $(buildConfiguration) $(webProject)
+  displayName: 'dotnet build $(buildConfiguration) Web'
+
+- script: dotnet ef migrations script -i -o $(Build.ArtifactStagingDirectory)\migrate.sql --project $(apiProject)
+  displayName: 'Generating DB script'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Publishing App API'
+  inputs:
+    command: 'publish'
+    publishWebProjects: false
+    projects: '$(apiProject)'
+    arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/api --runtime win-x86 --self-contained'
+    zipAfterPublish: false
+    modifyOutputPath: false
+
+- task: DotNetCoreCLI@2
+  displayName: 'Publishing App Web'
+  inputs:
+    command: 'publish'
+    publishWebProjects: false
+    projects: '$(webProject)'
+    arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/web --runtime win-x86 --self-contained'
+    zipAfterPublish: false
+    modifyOutputPath: false
+
+- task: PublishBuildArtifacts@1
+  displayName: 'Publicar artefactos'
+  inputs:
+    pathToPublish: '$(Build.ArtifactStagingDirectory)'
+    artifactName: 'drop'
+    publishLocation: 'Container'
