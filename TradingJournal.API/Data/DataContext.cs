@@ -11,6 +11,7 @@ namespace TradingJournal.API.Data
         {
         }
 
+        public DbSet<Pruebaci> Pruebacis { get; set; }
         public DbSet<Account> Accounts { get; set; }
         public DbSet<AccType> AccTypes { get; set; }
         public DbSet<Broker> Brokers { get; set; }

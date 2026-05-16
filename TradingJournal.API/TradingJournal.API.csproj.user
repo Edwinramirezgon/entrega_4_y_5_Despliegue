@@ -2,6 +2,6 @@
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <ActiveDebugProfile>https</ActiveDebugProfile>
-    <NameOfLastUsedPublishProfile>C:\Users\EDWIN\source\repos\entrega_4_y_5_Despliegue\TradingJournal.API\Properties\PublishProfiles\TradingJournalAPI - Web Deploy.pubxml</NameOfLastUsedPublishProfile>
+    <NameOfLastUsedPublishProfile>TradingJournalAPI - Web Deploy</NameOfLastUsedPublishProfile>
   </PropertyGroup>
 </Project>

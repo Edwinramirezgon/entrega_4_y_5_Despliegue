@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "Nuevo perfil",
+    "Projects": [
+      {
+        "Path": "TradingJournal.API\\TradingJournal.API.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "TradingJournal.Web\\TradingJournal.Web.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]
