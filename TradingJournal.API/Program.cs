@@ -141,16 +141,13 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-    app.UseCors(x => x
+app.UseCors(x => x
+    .WithOrigins("https://tradingjournalweb-hyh0hna6dweka3bh.canadacentral-01.azurewebsites.net")
+    .AllowAnyMethod()
+    .AllowAnyHeader()
+    .AllowCredentials()
+);
 
-     .AllowAnyMethod()
-     .AllowAnyHeader()
-     .SetIsOriginAllowed(origin => true)
-     .AllowCredentials()
-
-
-     );
-
-    app.MapGet("/health", () => Results.Ok("OK"));
+app.MapGet("/health", () => Results.Ok("OK"));
 
     app.Run();
