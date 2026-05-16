@@ -2,7 +2,11 @@
 
 ## Integrantes del equipo
 
-> _(Completen con sus nombres completos aquí)_
+Edwin Ramirez Gonzalez
+Juan Jose Rua David
+Felipe Olaya Beneitez
+Julian Andres Ramirez Bedoya
+Argenis Alejandro Ruiz Cotes
 
 ---
 
@@ -10,8 +14,8 @@
 
 | Actividad | Enlace |
 |-----------|--------|
-| Integración Continua (CI) | _(Agregar enlace al video de CI)_ |
-| Entrega Continua (CD) | _(Agregar enlace al video de CD)_ |
+| Integración Continua (CI) |  |
+| Entrega Continua (CD) | |
 
 ---
 
@@ -36,8 +40,8 @@
 
 | Evento | Fecha |
 |--------|-------|
-| Primer despliegue CI/CD | _(Agregar fecha)_ |
-| Último despliegue exitoso | _(Agregar fecha)_ |
+| Primer despliegue CI/CD | 15 mayo 2026|
+| Último despliegue exitoso | 17 mayo 2026 |
 
 ---
 
