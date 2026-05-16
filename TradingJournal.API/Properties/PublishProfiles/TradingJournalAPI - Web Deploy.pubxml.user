@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Este archivo se usa en el proceso de publicación y empaquetado del proyecto web. Para personalizar el comportamiento de este proceso,
+edite el archivo MSBuild. Visite https://go.microsoft.com/fwlink/?LinkID=208121 para obtener más información. 
+-->
+<Project>
+  <PropertyGroup>
+    <TimeStampOfAssociatedLegacyPublishXmlFile />
+    <History>True|2026-05-16T04:53:49.4334163Z||;False|2026-05-15T23:47:28.1342059-05:00||;False|2026-05-15T23:31:20.4831181-05:00||;False|2026-05-15T23:20:19.0404096-05:00||;False|2026-05-15T23:12:54.0956621-05:00||;False|2026-05-15T22:59:59.8057010-05:00||;False|2026-05-15T22:46:34.4623543-05:00||;</History>
+    <LastFailureDetails />
+  </PropertyGroup>
+  <ItemGroup>
+    <DestinationConnectionStrings Include="Connectionwhitparams">
+      <Value>Server=tcp:tradingjournalapidbdbserver.database.windows.net,1433%3bDatabase=TradingJournalAPIdb%3bUser ID=Sqlsa%3bPassword=Ca121203%3bEncrypt=True%3bTrustServerCertificate=False%3bConnection Timeout=30%3b</Value>
+    </DestinationConnectionStrings>
+  </ItemGroup>
+  <ItemGroup>
+    <EFMigrations Include="TradingJournal.API.Data.DataContext">
+      <Value>Server=tcp:tradingjournalapidbdbserver.database.windows.net,1433%3bDatabase=TradingJournalAPIdb%3bUser ID=Sqlsa%3bPassword=Ca121203%3bEncrypt=True%3bTrustServerCertificate=False%3bConnection Timeout=30%3b</Value>
+    </EFMigrations>
+  </ItemGroup>
+</Project>

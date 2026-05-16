@@ -1,11 +1,20 @@
 {
   "dependencies": {
+    "apis1": {
+      "ignored": "true",
+      "type": "apis"
+    },
+    "mssql2": {
+      "secretStore": "AzureAppSettings",
+      "resourceId": "/subscriptions/[parameters('subscriptionId')]/resourceGroups/[parameters('resourceGroupName')]/providers/Microsoft.Sql/servers/tradingjournalapidbdbserver/databases/TradingJournalAPIdb",
+      "type": "mssql.azure",
+      "connectionId": "ConnectionStrings:WindowsSecurity1"
+    },
     "mssql1": {
       "secretStore": "AzureAppSettings",
-      "resourceId": "/subscriptions/[parameters('subscriptionId')]/resourcegroups/[parameters('resourceGroupName')]/providers/Microsoft.Sql/servers/tradingjournal/databases/TradingJournal.API_db",
+      "resourceId": "/subscriptions/[parameters('subscriptionId')]/resourceGroups/[parameters('resourceGroupName')]/providers/Microsoft.Sql/servers/tradingjournalapidbdbserver/databases/TradingJournalAPIdb",
       "type": "mssql.azure",
-      "connectionId": "ConnectionStrings:Connectionwhitparams",
-      "dynamicId": null
+      "connectionId": "ConnectionStrings:Connectionwhitparams"
     }
   }
 }

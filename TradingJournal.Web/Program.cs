@@ -14,7 +14,7 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://localhost:8080/";
+var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "https://tradingjournalapi-evfgeaese2gpg2e2.canadacentral-01.azurewebsites.net";
 builder.Services.AddSingleton(sp => new HttpClient { BaseAddress = new Uri(apiBaseUrl) });
 builder.Services.AddScoped<IRepository, Repository>();
 builder.Services.AddSweetAlert2();
