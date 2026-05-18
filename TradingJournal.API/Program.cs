@@ -137,20 +137,19 @@ app.UseSwaggerUI();
 
 
 app.UseHttpsRedirection();
+
+app.UseCors(x => x
+    .WithOrigins("https://tradingjournalweb-hyh0hna6dweka3bh.canadacentral-01.azurewebsites.net")
+    .AllowAnyMethod()
+    .AllowAnyHeader()
+    .AllowCredentials()
+);
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-    app.UseCors(x => x
+app.MapGet("/health", () => Results.Ok("OK"));
+app.MapGet("/pipeline-check", () => Results.Ok(new { message = "CI/CD activo", timestamp = DateTime.UtcNow }));
 
-     .AllowAnyMethod()
-     .AllowAnyHeader()
-     .SetIsOriginAllowed(origin => true)
-     .AllowCredentials()
-
-
-     );
-
-    app.MapGet("/health", () => Results.Ok("OK"));
-
-    app.Run();
+app.Run();
