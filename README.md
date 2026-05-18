@@ -14,8 +14,8 @@
 
 | Actividad | Enlace |
 |-----------|--------|
-| Integración Continua (CI) |  |
-| Entrega Continua (CD) | |
+| Integración Continua (CI) | https://youtu.be/18nWpZ77lik |
+| Entrega Continua (CD) | https://youtu.be/6sBI4lJLr3o |
 
 ---
 
@@ -41,7 +41,7 @@
 | Evento | Fecha |
 |--------|-------|
 | Primer despliegue CI/CD | 15 mayo 2026|
-| Último despliegue exitoso | 17 mayo 2026 |
+| Último despliegue exitoso | 18 mayo 2026 |
 
 ---
 
